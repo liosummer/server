@@ -1,0 +1,42 @@
+version: "3.0"
+
+services: 
+    mysql01:
+        container_name: mysql01
+        image: daocloud.io/library/mysql:8.0.20 # 使用官方镜像
+        ports: 
+            - 3306:3306 # 本机端口:容器端口
+        restart: on-failure
+        environment: 
+            MYSQL_DATABASE: blog
+            MYSQL_ROOT_PASSWORD: 123456
+            MYSQL_USER: lio
+            MYSQL_PASSWORD: 123456
+            MYSQL_ROOT_HOST: '%'
+        volumes:
+            - /home/mysql/db:/var/lib/mysql # 用来存放了数据库表文件
+            - /home/mysql/conf/my.cnf:/etc/my.cnf # 存放自定义的配置文件
+            # 我们在启动MySQL容器时自动创建我们需要的数据库和表
+            # mysql官方镜像中提供了容器启动时自动docker-entrypoint-initdb.d下的脚本的功能
+            - /home/mysql/init:/docker-entrypoint-initdb.d/ # 存放初始化的脚本
+        networks: 
+            - mysql01_bridge
+
+    server_demo: # nestjs服务
+        container_name: server_demo
+        build: # 根据Dockerfile构建镜像
+            context: .
+            dockerfile: Dockerfile
+        ports: 
+            - 3000:3000
+        restart: on-failure # 设置自动重启，这一步必须设置，主要是存在mysql还没有启动完成就启动了node服务
+        networks: 
+            - mysql01_bridge
+        depends_on: # node服务依赖于mysql和redis
+            - mysql01
+
+# 声明一下网桥  mysql01_bridge。
+# 重要：将所有服务都挂载在同一网桥即可通过容器名来互相通信了
+# 如nestjs连接mysql可以通过容器名来互相通信
+networks:
+    mysql01_bridge:
