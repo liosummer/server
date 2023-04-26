@@ -57,4 +57,4 @@ import { WorksModule } from './modules/works/works.module';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}
